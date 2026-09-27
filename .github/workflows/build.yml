@@ -1,0 +1,77 @@
+name: Build and push
+
+# Daily: build and push when PyPI has a von-sdk release that Docker Hub does not have yet.
+# A push to main or a manual run always rebuilds the latest von-sdk release.
+# Needs repository secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN.
+on:
+  schedule:
+    - cron: "37 6 * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYPI_PACKAGE: von-sdk
+  IMAGE_NAME: pikkonmg/von-system-one
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      build: ${{ steps.release.outputs.build }}
+    steps:
+      - name: Find the latest Von release
+        id: release
+        run: |
+          version=$(curl -fsS "https://pypi.org/pypi/$PYPI_PACKAGE/json" | jq -r .info.version)
+          build=true
+          if [ "$GITHUB_EVENT_NAME" = schedule ] \
+            && curl -fsS "https://hub.docker.com/v2/repositories/$IMAGE_NAME/tags/$version-cpu" >/dev/null \
+            && curl -fsS "https://hub.docker.com/v2/repositories/$IMAGE_NAME/tags/$version-nvidia" >/dev/null; then
+            build=false
+          fi
+          echo "Von $version, build: $build"
+          {
+            echo "version=$version"
+            echo "build=$build"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [cpu, nvidia]
+    steps:
+      # The nvidia image is several GB; the runner needs the extra disk space.
+      - name: Free runner disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Build image
+        run: |
+          docker build --build-arg TARGET=${{ matrix.target }} --build-arg VON_VERSION=${{ needs.check.outputs.version }} \
+            -t "$IMAGE_NAME:${{ matrix.target }}" \
+            -t "$IMAGE_NAME:${{ needs.check.outputs.version }}-${{ matrix.target }}" .
+
+      - name: Smoke test
+        run: sh smoke_test.sh "$IMAGE_NAME:${{ matrix.target }}" ${{ matrix.target }}
+
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
+      - name: Push image
+        run: |
+          docker push "$IMAGE_NAME:${{ matrix.target }}"
+          docker push "$IMAGE_NAME:${{ needs.check.outputs.version }}-${{ matrix.target }}"

@@ -1,0 +1,137 @@
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.history/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Environment — every .env variant; only the example file is shared.
+.env
+.env.*
+!.env.example
+
+# Signing & secrets — code-signing material and credentials, never commit.
+# Release binaries are currently unsigned (see AGENTS.md Distribution), but
+# a leaked signing key or cert bundle is still a security incident.
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+*.p8
+*.cer
+*.crt
+*.keystore
+*.jks
+secrets/
+.npmrc.local
+# electron-builder reads release tokens (GH_TOKEN, CSC_KEY_PASSWORD) from this file.
+electron-builder.env
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing / coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# Lint cache
+.eslintcache
+
+# npm pack output
+*.tgz
+
+# Electron / packaging artifacts
+*.dmg
+*.AppImage
+# AppImage extraction dir (created by `AppImage --appimage-extract`)
+squashfs-root/
+*.exe
+*.msi
+*.pkg
+*.zip
+*.deb
+*.rpm
+*.snap
+*.blockmap
+# electron-builder auto-update metadata
+latest*.yml
+builder-debug.yml
+builder-effective-config.yaml
+
+# Local app state (developer-only)
+.pi-desktop-gui/
+# Downloaded speech-to-text models live in the app data dir, never in the repo;
+# ignored defensively in case the data dir is ever pointed here.
+speech-models/
+
+# Pi project-level settings — created if Pi is ever run with this repo
+# itself as a workspace (see AGENTS.md Data Storage: .pi/settings.json)
+.pi/
+.pi-desktop/
+.pi-subagents/
+
+# Agent context — local-only memory, architecture notes and plans
+MEMORY.md
+TEST.md
+docs/superpowers/
+
+# AI Coding Agents
+.serena/
+.claude/
+.claude-code/
+.codex/
+.kilo/
+.roo/
+.cline/
+.aider/
+.continue/
+.openhands/
+.agents/
+.superpowers/
+
+# AI IDEs
+.cursor/
+.windsurf/
+.zed/
+
+# MCP
+.mcp/
+.mcp-server/
+.mcpservers/
+.context7/
+.playwright-mcp/
+
+# Agent Memory / Knowledge
+.openmemory/
+.mem0/
+.memory/
+.knowledge/
+.context/
+
+# Local Developer Config
+.fleet/
+
+# Local Runtime Environments
+.venv/
+
+# Worktrees / Local Sandboxes
+.worktrees/
+.sandbox/

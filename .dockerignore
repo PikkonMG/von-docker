@@ -1,0 +1,4 @@
+# The build context only needs the two start files. Von comes from PyPI.
+**
+!start.sh
+!serve.py
