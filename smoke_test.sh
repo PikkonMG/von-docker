@@ -41,6 +41,22 @@ case "$target" in
 esac
 in_image "import importlib.util; assert importlib.util.find_spec('triton') is None" || fail "triton is still installed"
 
+echo "Test: a full GPU moves Von to the CPU instead of stopping"
+fallback_output=$(docker run --rm --entrypoint python -e VON_DEVICE=cuda -w /opt/von "$image" -c "
+import os, torch, serve
+from von.engine import VonEngine
+
+def evaluate_with_full_gpu(self, **request):
+    if self.device == serve.CUDA_DEVICE:
+        raise torch.OutOfMemoryError('CUDA out of memory')
+
+VonEngine.evaluate = evaluate_with_full_gpu
+serve.load_model()
+assert VonEngine.get_instance().device == serve.CPU_DEVICE, VonEngine.get_instance().device
+assert os.environ['VON_DEVICE'] == serve.CPU_DEVICE
+" 2>&1) || fail "full GPU did not fall back to the CPU: $fallback_output"
+echo "$fallback_output" | grep -q "Von runs on the CPU instead" || fail "no GPU full warning: $fallback_output"
+
 if [ "$target" = nvidia ]; then
     echo "Test: nvidia image without a GPU stops with a hint"
     if output=$(docker run --rm "$image" 2>&1); then
